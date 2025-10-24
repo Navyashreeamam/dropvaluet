@@ -1,39 +1,61 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard</title>
-    <style>
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 8px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            text-decoration: none;
-            color: white;
-            cursor: pointer;
-            text-align: center;
-        }
-        .btn-upload {
-            background-color: #28a745;
-        }
-        .btn-trash {
-            background-color: #dc3545;
-        }
-        .btn:hover {
-            opacity: 0.9;
-        }
-    </style>
-</head>
-<body>
-    <h1>Hey, welcome to the dashboard, {{ email }}!</h1>
-    <p>Login successful.</p>
+<!-- templates/dashboard.html -->
+<h1>Dashboard - {{ email }}</h1>
 
-    <button class="btn btn-upload">Upload Your Files</button>
-    <button class="btn btn-trash">Trash Files</button>
+<!-- Upload Form -->
+<form id="uploadForm" enctype="multipart/form-data">
+  {% csrf_token %}
+  <input type="file" name="file" required>
+  <button type="submit">Upload File</button>
+</form>
 
-    <br><br>
-    <a href="{% url 'logout' %}">Log Out</a>
-</body>
-</html>
+<!-- File List -->
+<h2>Your Files</h2>
+<ul id="fileList"></ul>
+<button onclick="loadFiles()">Refresh Files</button>
+
+<!-- Trash Button -->
+<a href="/files/trash/">View Trash</a>
+
+<script>
+// Upload file
+document.getElementById('uploadForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const res = await fetch('/files/upload/', {
+    method: 'POST',
+    body: formData,
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  });
+  if (res.ok) {
+    alert('Uploaded!');
+    loadFiles();
+  } else {
+    alert('Upload failed');
+  }
+};
+
+// Load files
+async function loadFiles() {
+  const res = await fetch('/files/list/');
+  const files = await res.json();
+  document.getElementById('fileList').innerHTML = 
+    files.map(f => 
+      `<li>${f.original_name} 
+        <button onclick="deleteFile(${f.id})">Delete</button>
+      </li>`
+    ).join('');
+}
+
+// Delete file
+async function deleteFile(id) {
+  if (!confirm('Delete?')) return;
+  await fetch(`/files/delete/${id}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  });
+  loadFiles();
+}
+
+// Load on start
+loadFiles();
+</script>

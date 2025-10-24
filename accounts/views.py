@@ -129,3 +129,5 @@ def dashboard(request):
 
 def home(request):
     return render(request, 'home.html')
+def upload_test(request):
+    return render(request, 'upload_test.html')
